@@ -2,14 +2,16 @@ import whisper
 import torch
 import time
 
+total_samples = 1
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print(f"Using device: {device}")
 
-start_time = time.time()
+# Load model to the gpu
+load_start_time = time.time()
 model = whisper.load_model("base", device="cuda")
-end_time = time.time()
-time_taken = end_time - start_time
-print(f"Time taken to move the model to {device}: {time_taken:.4f} seconds")
+if device.type == 'cuda':
+    torch.cuda.synchronize()
+load_end_time = time.time()
 
 # load audio and pad/trim it to fit 30 seconds
 audio = whisper.load_audio("audio.mp3")
@@ -22,16 +24,23 @@ mel = whisper.log_mel_spectrogram(audio).to(model.device)
 _, probs = model.detect_language(mel)
 # print(f"Detected language: {max(probs, key=probs.get)}")
 
-# decode the audio
+# Decode the audio
 options = whisper.DecodingOptions()
-start_time = time.time()
+inference_start_time = time.time()
 result = whisper.decode(model, mel, options)
 if device.type == 'cuda':
     torch.cuda.synchronize() # Make sure all operations are finished
-end_time = time.time()
-elapsed_time = end_time - start_time
-print(f"Throughput: {(1/elapsed_time):.6f} samples/second")
-print(f"Latency: {time_taken + elapsed_time}")
+inference_stop_time = time.time()
+
+# Getting the result
+inference_time = inference_stop_time - inference_start_time
+throughput = total_samples / inference_time
+
+print(f"Total samples : {total_samples}")
+print(f"Throughput: {throughput:.2f} samples/second")
+print(f"Load model latency: {load_end_time - load_start_time}")
+print(f"Inference latency: {inference_time}")
+
 # print the recognized text
 print(result.text)
 
