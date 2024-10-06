@@ -44,8 +44,9 @@ model = NeuralNetwork().to(device)
 if device.type == 'cuda':
     torch.cuda.synchronize() # Make sure all operations are finished
 load_end_time = time.time()
-model.eval()
 
+# Start inferencing
+model.eval()
 inference_start_time = time.time()
 total_samples = 0
 with torch.no_grad():
@@ -53,8 +54,11 @@ with torch.no_grad():
         X, y = X.to(device), y.to(device)
         pred = model(X)
         total_samples += X.size(0)
-
+if device.type == 'cuda':
+    torch.cuda.synchronize() # Make sure all operations are finished
 inference_stop_time = time.time()
+
+# Getting the result
 inference_time = inference_stop_time - inference_start_time
 throughput = total_samples / inference_time
 
