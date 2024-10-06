@@ -42,3 +42,6 @@ print(f"Total samples : {total_samples}")
 print(f"Throughput: {throughput:.2f} samples/second")
 print(f"Load model latency: {load_end_time - load_start_time}")
 print(f"Inference latency: {inference_time}")
+
+results = utils.pick_n_best(predictions=output, n=5)
+print(results)
