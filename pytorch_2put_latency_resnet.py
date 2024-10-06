@@ -5,35 +5,40 @@ resnet50 = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_resnet
 utils = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_convnets_processing_utils')
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print(f'Using {device} for inference')
-zero_time = time.time()
-resnet50.eval().to(device)
 
+# Load model to the gpu
+load_start_time = time.time()
+resnet50.eval().to(device)
+if device.type == 'cuda':
+    torch.cuda.synchronize() # Make sure all operations are finished
+load_end_time = time.time()
+
+# Load samples to the gpu
 uris = [
     'http://images.cocodataset.org/test-stuff2017/000000024309.jpg',
     'http://images.cocodataset.org/test-stuff2017/000000028117.jpg',
     'http://images.cocodataset.org/test-stuff2017/000000006149.jpg',
     'http://images.cocodataset.org/test-stuff2017/000000004954.jpg',
 ]
-
 batch = torch.cat(
     [utils.prepare_input_from_uri(uri) for uri in uris]
 ).to(device)
 
-start_time = time.time()
+# Start inferencing
 total_samples = 0
+inference_start_time = time.time()
 with torch.no_grad():
     output = torch.nn.functional.softmax(resnet50(batch), dim=1)
-    
     total_samples += batch.size(0)
-end_time = time.time()
-
 if device.type == 'cuda':
     torch.cuda.synchronize() # Make sure all operations are finished
+inference_stop_time = time.time()
 
-elapsed_time = end_time - start_time
+# Getting the result
+inference_time = inference_stop_time - inference_start_time
+throughput = total_samples / inference_time
+
 print(f"Total samples : {total_samples}")
-print(f"Throughput: {total_samples/elapsed_time:.6f} samples/second")
-print(f"Latency: {end_time - zero_time}")
-
-# results = utils.pick_n_best(predictions=output, n=5)
-# print(results)
+print(f"Throughput: {throughput:.2f} samples/second")
+print(f"Load model latency: {load_end_time - load_start_time}")
+print(f"Inference latency: {inference_time}")
