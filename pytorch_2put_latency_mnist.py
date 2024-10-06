@@ -38,11 +38,15 @@ class NeuralNetwork(nn.Module):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
 
-zero_time = time.time()
+# Load model to the gpu
+load_start_time = time.time()
 model = NeuralNetwork().to(device)
+if device.type == 'cuda':
+    torch.cuda.synchronize() # Make sure all operations are finished
+load_end_time = time.time()
 model.eval()
 
-start_time = time.time()
+inference_start_time = time.time()
 total_samples = 0
 with torch.no_grad():
     for X, y in dataloader:
@@ -50,13 +54,11 @@ with torch.no_grad():
         pred = model(X)
         total_samples += X.size(0)
 
-if device.type == 'cuda':
-    torch.cuda.synchronize() # Make sure all operations are finished
-
-end_time = time.time()
-elapsed_time = end_time - start_time
-throughput = total_samples / elapsed_time
+inference_stop_time = time.time()
+inference_time = inference_stop_time - inference_start_time
+throughput = total_samples / inference_time
 
 print(f"Total samples : {total_samples}")
 print(f"Throughput: {throughput:.2f} samples/second")
-print(f"Latency: {end_time - zero_time}")
+print(f"Load model latency: {load_end_time - load_start_time}")
+print(f"Inference latency: {inference_time}")
