@@ -1,0 +1,17 @@
+// timer.proto
+
+syntax = "proto3";
+
+package timer;
+
+service TimerService {
+  // GetCurrentTime returns the current server time as a string.
+  rpc GetCurrentTime (TimeRequest) returns (TimeResponse);
+}
+
+// The request message doesn't need any fields.
+message TimeRequest {}
+
+message TimeResponse {
+  string current_time = 1;
+}
